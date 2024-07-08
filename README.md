@@ -46,7 +46,7 @@ This will be the agent configuration that system uses when running the simulatio
 
 
 
-### This github doens't contain data files due to a large files size. Please see <insert other git> for details on how to collect and manipulate the training data.
+### This github doens't contain data files due to a large files size. Please see <[other git]insert other git> for details on how to collect and manipulate the training data.
   
 
   
