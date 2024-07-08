@@ -782,7 +782,7 @@ class XGBoostBettingAgent(BettingAgent):
         super().__init__(id, name, lengthOfRace, endOfInPlayBettingPeriod, influenced_by_opinions,
                          local_opinion, uncertainty, lower_op_bound, upper_op_bound)
         self.xgb_loaded_model = xgb.Booster()
-        self.xgb_loaded_model.load_model('/Users/joesouber/XGBoost_TBBE/TBBE_OD_XGboost/Application/trained_xgboost_model.json')  # the trained XGBoost model
+        self.xgb_loaded_model.load_model('/Volumes/Seagate/DeepBettor/TBBE_OD_XGboost/Application/trained_xgboost_model.json')  # the trained XGBoost model
         self.bettingInterval = 2  
         self.bettingTime = random.randint(5, 15)
         self.name = 'XGBoostBettingAgent'
@@ -862,4 +862,124 @@ class XGBoostBettingAgent(BettingAgent):
                             self.amountFromOrders = liability
 
         return None
+#########################################
 
+# LSTM AGENT
+
+##########################################
+
+
+import tensorflow as tf
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+from message_protocols import Order
+from system_constants import *
+
+class LSTMBettingAgent(BettingAgent):
+
+    def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod, influenced_by_opinions, 
+                 local_opinion, uncertainty, lower_op_bound, upper_op_bound, exchange=None):
+        super().__init__(id, name, lengthOfRace, endOfInPlayBettingPeriod, influenced_by_opinions,
+                         local_opinion, uncertainty, lower_op_bound, upper_op_bound)
+        self.lstm_model = tf.keras.models.load_model('/Volumes/Seagate/DeepLearningBBE_modeltraining/lstm trained well 2/trained_lstm_model.h5')
+        self.scaler = MinMaxScaler()
+        self.scaler.fit(self.get_scaler_fit_data())  # Fit the scaler on the training data to maintain consistency
+        self.bettingInterval = 2  
+        self.bettingTime = random.randint(5, 15)
+        self.name = 'LSTMBettingAgent'
+        self.exchange = exchange if exchange is not None else random.randint(0, NUM_OF_EXCHANGES - 1)
+
+    def get_scaler_fit_data(self):
+        # Load the same training data used for fitting the scaler
+        file_path = '/Volumes/Seagate/preprocessed_data_final_switchedcol.csv'
+        data = pd.read_csv(file_path)
+        # Ensure 'type' is excluded as during training
+        return data.drop(columns=['type'])
+
+    def getorder(self, time, markets):
+        order = None
+        if len(self.orders) > 0:
+            order = self.orders.pop()
+        return order
+
+    def preprocess_data(self, time, stake, distance, rank, balance):
+        # Create a single row of data matching the training data structure
+        # Since 'label' is not available in live data, we use a placeholder value (e.g., 1)
+        label = 1  # Placeholder value for label
+        decision = 1  # Placeholder value for decision (since it's part of the training data structure)
+
+        # Create a single row of data with the necessary features
+        data = np.array([[1, time, 0, 0.002617, 0, stake, distance, rank, balance, label, decision]])
+
+        # Normalize the data using the scaler fitted on the training data
+        data = self.scaler.transform(data)
+
+        # Reshape to (batch_size, time_steps, features)
+        data = np.expand_dims(data, axis=1)
+
+        return data
+
+    def make_decision(self, time, stake, distance, rank, balance):
+        # Preprocess the input data
+        input_data = self.preprocess_data(time, stake, distance, rank, balance)
+        
+        # Predict using the LSTM model
+        prediction = self.lstm_model.predict(input_data)[0, 0]
+        decision_result = 1 if prediction > 0.5 else 0
+        
+        return decision_result
+
+    def respond(self, time, markets, trade):
+        if self.bettingPeriod == False: return None
+        order = None
+        if self.raceStarted == False: return order
+
+        if self.bettingTime <= self.raceTimestep and self.raceTimestep % self.bettingInterval == 0:
+            sortedComps = sorted((self.currentRaceState.items()), key=operator.itemgetter(1))
+            
+            for rank, (competitor, distance) in enumerate(sortedComps):
+                # Retrieve the agent's current balance dynamically
+                balance = self.balance  # This is a simplified placeholder; update if needed
+                # In a more complex scenario, you might update the balance based on the latest trades and market conditions
+
+                # Make a decision using the LSTM model
+                decision_result = self.make_decision(time, 15, distance, rank + 1, balance)
+                
+                if decision_result == 1:  # Decision = back
+                    if markets[self.exchange][competitor]['backs']['n'] > 0:
+                        quoteodds = max(MIN_ODDS, markets[self.exchange][competitor]['backs']['best'] - 0.1)
+                    else:
+                        quoteodds = markets[self.exchange][competitor]['backs']['worst']
+
+                    order = Order(self.exchange, self.id, competitor, 'Back', quoteodds, 
+                                  random.randint(self.stakeLower, self.stakeHigher), 
+                                  markets[self.exchange][competitor]['QID'], time)
+
+                    if order.direction == 'Back':
+                        liability = self.amountFromOrders + order.stake
+                        if liability > self.balance:
+                            continue
+                        else:
+                            self.orders.append(order)
+                            self.amountFromOrders = liability
+
+                elif decision_result == 0:  # Decision = lay 
+                    if markets[self.exchange][competitor]['lays']['n'] > 0:
+                        quoteodds = markets[self.exchange][competitor]['lays']['best'] + 0.1
+                    else:
+                        quoteodds = markets[self.exchange][competitor]['lays']['worst']
+
+                    order = Order(self.exchange, self.id, competitor, 'Lay', quoteodds,
+                                  random.randint(self.stakeLower, self.stakeHigher),
+                                  markets[self.exchange][competitor]['QID'], time)
+
+                    if order.direction == 'Lay':
+                        liability = self.amountFromOrders + ((order.stake * order.odds) - order.stake)
+                        if liability > self.balance:
+                            continue
+                        else:
+                            self.orders.append(order)
+                            self.amountFromOrders = liability
+
+        return None

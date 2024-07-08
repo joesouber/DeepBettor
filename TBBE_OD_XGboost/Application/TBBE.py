@@ -209,6 +209,7 @@ class Session:
 
             if name == 'Agent_Opinionated_Priviledged': return Agent_Opinionated_Priviledged(id, name, self.lengthOfRace, self.endOfInPlayBettingPeriod, 1, local_opinion, uncertainty, MIN_OP, MAX_OP)
             if name == 'XGBoostBettingAgent': return XGBoostBettingAgent(id, name, self.lengthOfRace, self.endOfInPlayBettingPeriod, 0, local_opinion,uncertainty, MIN_OP, MAX_OP)
+            if name == 'LSTMBettingAgent': return LSTMBettingAgent(id, name, self.lengthOfRace, self.endOfInPlayBettingPeriod, 0, local_opinion,uncertainty, MIN_OP, MAX_OP)
 
 
         id = 0

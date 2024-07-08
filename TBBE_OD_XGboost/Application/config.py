@@ -23,22 +23,23 @@
 #           ('Agent_Opinionated_Priviledged', 2)
 #           ]
 
-agents = [
-          ('Agent_Opinionated_Random', 45),
-          ('Agent_Opinionated_Leader_Wins', 24),
-          ('Agent_Opinionated_Underdog', 40),
-          ('Agent_Opinionated_Back_Favourite',44),
-          ('Agent_Opinionated_Linex', 21),
-          ('Agent_Opinionated_Priviledged', 50),
-          ('XGBoostBettingAgent',50)
-          ]
-
 # agents = [
-#           ('Agent_Opinionated_Random', 5),
-#           ('Agent_Opinionated_Leader_Wins', 5),
-#           ('Agent_Opinionated_Underdog', 5),
-#           ('Agent_Opinionated_Back_Favourite',5),
-#           ('Agent_Opinionated_Linex', 5),
-#           ('Agent_Opinionated_Priviledged', 5),
-#           ('XGBoostBettingAgent', 5)
+#           ('Agent_Opinionated_Random', 45),
+#           ('Agent_Opinionated_Leader_Wins', 24),
+#           ('Agent_Opinionated_Underdog', 40),
+#           ('Agent_Opinionated_Back_Favourite',44),
+#           ('Agent_Opinionated_Linex', 21),
+#           ('Agent_Opinionated_Priviledged', 50),
+#           ('XGBoostBettingAgent',50)
 #           ]
+
+agents = [
+          ('Agent_Opinionated_Random', 5),
+          ('Agent_Opinionated_Leader_Wins', 5),
+          ('Agent_Opinionated_Underdog', 5),
+          ('Agent_Opinionated_Back_Favourite',5),
+          ('Agent_Opinionated_Linex', 5),
+          ('Agent_Opinionated_Priviledged', 5),
+          ('XGBoostBettingAgent', 5),
+          ('LSTMBettingAgent',5)
+          ]
